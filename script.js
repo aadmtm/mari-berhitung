@@ -1,666 +1,260 @@
-// =========================================
-// DATA SOAL
-// =========================================
-
 const questions = [
-  {
-    question: "2 + 1 = ?",
-    answer: 3,
-    choices: [5, 2, 3, 4]
-  },
-
-  {
-    question: "3 + 2 = ?",
-    answer: 5,
-    choices: [6, 5, 3, 4]
-  },
-
-  {
-    question: "3 + 3 = ?",
-    answer: 6,
-    choices: [6, 5, 3, 4]
-  },
-
-  {
-    question: "5 + 2 = ?",
-    answer: 7,
-    choices: [6, 5, 7, 4]
-  },
-
-  {
-    question: "2 + 4 = ?",
-    answer: 6,
-    choices: [6, 5, 1, 4]
-  }
+  { question: "2 + 1 = ?", answer: 3, choices: [5, 2, 3, 4] },
+  { question: "3 + 2 = ?", answer: 5, choices: [6, 5, 3, 4] },
+  { question: "3 + 3 = ?", answer: 6, choices: [6, 5, 3, 4] },
+  { question: "5 + 2 = ?", answer: 7, choices: [6, 5, 7, 4] },
+  { question: "2 + 4 = ?", answer: 6, choices: [6, 5, 1, 4] },
 ];
 
+const QUESTION_TIME = 10;
+const POINTS_PER_CORRECT_ANSWER = 5;
+const TIMER_CIRCUMFERENCE = 213.63;
 
-// =========================================
-// VARIABLE GAME
-// =========================================
+const screens = {
+  start: document.querySelector("#start-screen"),
+  quiz: document.querySelector("#quiz-screen"),
+  result: document.querySelector("#result-screen"),
+};
 
-let currentQuestion = 0;
+const elements = {
+  startButton: document.querySelector("#start-button"),
+  restartButton: document.querySelector("#restart-button"),
+  homeButton: document.querySelector("#home-button"),
+  resultHomeButton: document.querySelector("#result-home-button"),
+  bestScoreStart: document.querySelector("#best-score-start"),
+  bestScoreResult: document.querySelector("#best-score-result"),
+  questionNumber: document.querySelector("#question-number"),
+  questionText: document.querySelector("#question-text"),
+  progressBar: document.querySelector("#progress-bar"),
+  progressTrack: document.querySelector(".progress-track"),
+  currentScore: document.querySelector("#current-score"),
+  answers: document.querySelector("#answers"),
+  feedback: document.querySelector("#feedback"),
+  timer: document.querySelector("#timer"),
+  timerValue: document.querySelector("#timer-value"),
+  timerProgress: document.querySelector("#timer-progress"),
+  finalScore: document.querySelector("#final-score"),
+  correctCount: document.querySelector("#correct-count"),
+  resultTitle: document.querySelector("#result-title"),
+  resultMessage: document.querySelector("#result-message"),
+  resultBadge: document.querySelector("#result-badge"),
+};
+
+let currentQuestionIndex = 0;
 let score = 0;
+let correctAnswers = 0;
+let timeLeft = QUESTION_TIME;
+let timerInterval = null;
+let nextQuestionTimeout = null;
+let isAnswerLocked = false;
 
-let timeLeft = 10;
-
-let timerInterval;
-
-let answered = false;
-
-
-// =========================================
-// ELEMENT
-// =========================================
-
-const startScreen =
-  document.getElementById("startScreen");
-
-const gameScreen =
-  document.getElementById("gameScreen");
-
-const resultScreen =
-  document.getElementById("resultScreen");
-
-
-const startBtn =
-  document.getElementById("startBtn");
-
-const restartBtn =
-  document.getElementById("restartBtn");
-
-const backBtn =
-  document.getElementById("backBtn");
-
-const homeBtn =
-  document.getElementById("homeBtn");
-
-
-const questionElement =
-  document.getElementById("question");
-
-const choicesElement =
-  document.getElementById("choices");
-
-const questionNumber =
-  document.getElementById("questionNumber");
-
-const scoreElement =
-  document.getElementById("score");
-
-const currentScoreElement =
-  document.getElementById("currentScore");
-
-const timerElement =
-  document.getElementById("timer");
-
-const progressFill =
-  document.getElementById("progressFill");
-
-const feedback =
-  document.getElementById("feedback");
-
-const finalScore =
-  document.getElementById("finalScore");
-
-const bestScoreElement =
-  document.getElementById("bestScore");
-
-const resultMessage =
-  document.getElementById("resultMessage");
-
-const resultStars =
-  document.getElementById("resultStars");
-
-
-// =========================================
-// BEST SCORE
-// =========================================
-
-let bestScore =
-  Number(
-    localStorage.getItem(
-      "mathBestScore"
-    )
-  ) || 0;
-
-
-bestScoreElement.textContent =
-  bestScore;
-
-
-// =========================================
-// PINDAH SCREEN
-// =========================================
-
-function showScreen(screen) {
-
-  document
-    .querySelectorAll(".screen")
-    .forEach(item => {
-
-      item.classList.remove(
-        "active"
-      );
-
-    });
-
-
-  screen.classList.add(
-    "active"
-  );
-
+function getBestScore() {
+  try {
+    return Number(localStorage.getItem("petualangan-matematika-best")) || 0;
+  } catch {
+    return 0;
+  }
 }
 
+function saveBestScore(value) {
+  try {
+    localStorage.setItem("petualangan-matematika-best", String(value));
+  } catch {
+    // Permainan tetap berjalan bila penyimpanan browser tidak tersedia.
+  }
+}
 
-// =========================================
-// MULAI GAME
-// =========================================
+function updateBestScoreLabels() {
+  const bestScore = getBestScore();
+  elements.bestScoreStart.textContent = bestScore;
+  elements.bestScoreResult.textContent = bestScore;
+}
+
+function showScreen(screenName) {
+  Object.entries(screens).forEach(([name, screen]) => {
+    const isActive = name === screenName;
+    screen.hidden = !isActive;
+    screen.classList.toggle("screen--active", isActive);
+  });
+}
+
+function clearGameTimers() {
+  clearInterval(timerInterval);
+  clearTimeout(nextQuestionTimeout);
+  timerInterval = null;
+  nextQuestionTimeout = null;
+}
+
+function resetGame() {
+  clearGameTimers();
+  currentQuestionIndex = 0;
+  score = 0;
+  correctAnswers = 0;
+  isAnswerLocked = false;
+  elements.currentScore.textContent = "0";
+}
 
 function startGame() {
-
-  currentQuestion = 0;
-
-  score = 0;
-
-  timeLeft = 10;
-
-  answered = false;
-
-
-  scoreElement.textContent =
-    score;
-
-  currentScoreElement.textContent =
-    score;
-
-
-  showScreen(gameScreen);
-
-  loadQuestion();
-
+  resetGame();
+  showScreen("quiz");
+  renderQuestion();
 }
 
+function renderQuestion() {
+  clearGameTimers();
+  isAnswerLocked = false;
+  timeLeft = QUESTION_TIME;
 
-// =========================================
-// LOAD QUESTION
-// =========================================
+  const currentQuestion = questions[currentQuestionIndex];
+  const questionPosition = currentQuestionIndex + 1;
 
-function loadQuestion() {
+  elements.questionNumber.textContent = `Soal ${questionPosition} dari ${questions.length}`;
+  elements.questionText.textContent = currentQuestion.question;
+  elements.progressBar.style.width = `${(questionPosition / questions.length) * 100}%`;
+  elements.progressTrack.setAttribute("aria-valuenow", String(questionPosition));
+  elements.feedback.textContent = "";
+  elements.feedback.className = "feedback";
+  elements.answers.replaceChildren();
 
-  answered = false;
-
-  clearInterval(timerInterval);
-
-
-  feedback.textContent = "";
-
-  feedback.className =
-    "feedback";
-
-
-  const question =
-    questions[currentQuestion];
-
-
-  questionElement.textContent =
-    question.question;
-
-
-  questionNumber.textContent =
-    currentQuestion + 1;
-
-
-  progressFill.style.width =
-    `${
-      ((currentQuestion + 1)
-      / questions.length)
-      * 100
-    }%`;
-
-
-  choicesElement.innerHTML = "";
-
-
-  question.choices.forEach(choice => {
-
-    const button =
-      document.createElement(
-        "button"
-      );
-
-    button.className =
-      "choice-btn";
-
-    button.textContent =
-      choice;
-
-
-    button.addEventListener(
-      "click",
-      () => selectAnswer(
-        choice,
-        button
-      )
-    );
-
-
-    choicesElement.appendChild(
-      button
-    );
-
+  currentQuestion.choices.forEach((choice, index) => {
+    const button = document.createElement("button");
+    button.className = "answer-button";
+    button.type = "button";
+    button.textContent = choice;
+    button.dataset.value = String(choice);
+    button.setAttribute("aria-label", `Pilihan ${index + 1}: ${choice}`);
+    button.addEventListener("click", () => chooseAnswer(choice, button));
+    elements.answers.append(button);
   });
 
-
+  updateTimerDisplay();
   startTimer();
 
+  requestAnimationFrame(() => {
+    elements.answers.querySelector("button")?.focus({ preventScroll: true });
+  });
 }
-
-
-// =========================================
-// TIMER
-// =========================================
 
 function startTimer() {
-
-  timeLeft = 10;
-
-  timerElement.textContent =
-    timeLeft;
-
-
-  const timerCircle =
-    document.querySelector(
-      ".timer-circle"
-    );
-
-
-  timerCircle.classList.remove(
-    "warning"
-  );
-
-
-  timerInterval =
-    setInterval(() => {
-
-      timeLeft--;
-
-      timerElement.textContent =
-        timeLeft;
-
-
-      // warning ketika tersisa 3 detik
-
-      if (timeLeft <= 3) {
-
-        timerCircle.classList.add(
-          "warning"
-        );
-
-      }
-
-
-      // waktu habis
-
-      if (timeLeft <= 0) {
-
-        clearInterval(
-          timerInterval
-        );
-
-        timeOut();
-
-      }
-
-    }, 1000);
-
-}
-
-
-// =========================================
-// PILIH JAWABAN
-// =========================================
-
-function selectAnswer(
-  selectedAnswer,
-  selectedButton
-) {
-
-  if (answered) return;
-
-
-  answered = true;
-
-  clearInterval(
-    timerInterval
-  );
-
-
-  const correctAnswer =
-    questions[currentQuestion]
-      .answer;
-
-
-  const buttons =
-    document.querySelectorAll(
-      ".choice-btn"
-    );
-
-
-  buttons.forEach(button => {
-
-    button.disabled = true;
-
-  });
-
-
-  // BENAR
-
-  if (
-    selectedAnswer ===
-    correctAnswer
-  ) {
-
-    score += 5;
-
-
-    selectedButton.classList.add(
-      "correct"
-    );
-
-
-    feedback.textContent =
-      "🎉 Benar! +5 poin";
-
-    feedback.classList.add(
-      "correct"
-    );
-
-  }
-
-  // SALAH
-
-  else {
-
-    selectedButton.classList.add(
-      "wrong"
-    );
-
-
-    feedback.textContent =
-      `😅 Belum tepat! Jawabannya ${correctAnswer}`;
-
-    feedback.classList.add(
-      "wrong"
-    );
-
-
-    // tampilkan jawaban benar
-
-    buttons.forEach(button => {
-
-      if (
-        Number(button.textContent)
-        === correctAnswer
-      ) {
-
-        button.classList.add(
-          "correct"
-        );
-
-      }
-
-    });
-
-  }
-
-
-  updateScore();
-
-
-  // lanjut soal berikutnya
-
-  setTimeout(() => {
-
-    nextQuestion();
-
-  }, 1300);
-
-}
-
-
-// =========================================
-// WAKTU HABIS
-// =========================================
-
-function timeOut() {
-
-  if (answered) return;
-
-  answered = true;
-
-
-  const correctAnswer =
-    questions[currentQuestion]
-      .answer;
-
-
-  const buttons =
-    document.querySelectorAll(
-      ".choice-btn"
-    );
-
-
-  buttons.forEach(button => {
-
-    button.disabled = true;
-
-
-    if (
-      Number(button.textContent)
-      === correctAnswer
-    ) {
-
-      button.classList.add(
-        "correct"
-      );
-
+  timerInterval = setInterval(() => {
+    timeLeft -= 1;
+    updateTimerDisplay();
+
+    if (timeLeft <= 0) {
+      handleTimeUp();
     }
+  }, 1000);
+}
 
+function updateTimerDisplay() {
+  const progress = timeLeft / QUESTION_TIME;
+  elements.timerValue.textContent = String(timeLeft);
+  elements.timerProgress.style.strokeDashoffset = String(TIMER_CIRCUMFERENCE * (1 - progress));
+  elements.timer.classList.toggle("timer--warning", timeLeft <= 3);
+  elements.timer.setAttribute("aria-label", `Sisa waktu ${timeLeft} detik`);
+}
+
+function lockAnswerButtons() {
+  elements.answers.querySelectorAll("button").forEach((button) => {
+    button.disabled = true;
   });
-
-
-  feedback.textContent =
-    `⏰ Waktu habis! Jawabannya ${correctAnswer}`;
-
-  feedback.classList.add(
-    "wrong"
-  );
-
-
-  setTimeout(() => {
-
-    nextQuestion();
-
-  }, 1500);
-
 }
 
-
-// =========================================
-// UPDATE SCORE
-// =========================================
-
-function updateScore() {
-
-  scoreElement.textContent =
-    score;
-
-  currentScoreElement.textContent =
-    score;
-
+function revealCorrectAnswer() {
+  const correctValue = questions[currentQuestionIndex].answer;
+  const correctButton = elements.answers.querySelector(`[data-value="${correctValue}"]`);
+  correctButton?.classList.add("answer-button--correct");
 }
 
+function chooseAnswer(selectedAnswer, selectedButton) {
+  if (isAnswerLocked) return;
 
-// =========================================
-// NEXT QUESTION
-// =========================================
+  isAnswerLocked = true;
+  clearInterval(timerInterval);
+  lockAnswerButtons();
 
-function nextQuestion() {
+  const correctAnswer = questions[currentQuestionIndex].answer;
+  const isCorrect = selectedAnswer === correctAnswer;
 
-  currentQuestion++;
-
-
-  if (
-    currentQuestion <
-    questions.length
-  ) {
-
-    loadQuestion();
-
+  if (isCorrect) {
+    score += POINTS_PER_CORRECT_ANSWER;
+    correctAnswers += 1;
+    elements.currentScore.textContent = String(score);
+    selectedButton.classList.add("answer-button--correct");
+    elements.feedback.textContent = "Benar! Kamu hebat! ✨";
+    elements.feedback.classList.add("feedback--correct");
+  } else {
+    selectedButton.classList.add("answer-button--wrong");
+    revealCorrectAnswer();
+    elements.feedback.textContent = `Belum tepat. Jawabannya ${correctAnswer}.`;
+    elements.feedback.classList.add("feedback--wrong");
   }
 
-  else {
-
-    endGame();
-
-  }
-
+  scheduleNextQuestion();
 }
 
+function handleTimeUp() {
+  if (isAnswerLocked) return;
 
-// =========================================
-// SELESAI GAME
-// =========================================
-
-function endGame() {
-
-  clearInterval(
-    timerInterval
-  );
-
-
-  finalScore.textContent =
-    score;
-
-
-  // simpan skor terbaik
-
-  if (score > bestScore) {
-
-    bestScore = score;
-
-    localStorage.setItem(
-      "mathBestScore",
-      bestScore
-    );
-
-  }
-
-
-  bestScoreElement.textContent =
-    bestScore;
-
-
-  // Pesan hasil
-
-  if (score === 25) {
-
-    resultMessage.textContent =
-      "Luar biasa! Semua jawaban benar! 🎉";
-
-    resultStars.textContent =
-      "⭐⭐⭐⭐⭐";
-
-  }
-
-  else if (score >= 20) {
-
-    resultMessage.textContent =
-      "Hebat sekali! Sedikit lagi sempurna!";
-
-    resultStars.textContent =
-      "⭐⭐⭐⭐";
-
-  }
-
-  else if (score >= 15) {
-
-    resultMessage.textContent =
-      "Bagus! Terus berlatih ya!";
-
-    resultStars.textContent =
-      "⭐⭐⭐";
-
-  }
-
-  else if (score >= 10) {
-
-    resultMessage.textContent =
-      "Semangat! Kamu pasti bisa!";
-
-    resultStars.textContent =
-      "⭐⭐";
-
-  }
-
-  else {
-
-    resultMessage.textContent =
-      "Ayo coba lagi dan raih skor terbaik!";
-
-    resultStars.textContent =
-      "⭐";
-
-  }
-
-
-  showScreen(
-    resultScreen
-  );
-
+  isAnswerLocked = true;
+  clearInterval(timerInterval);
+  lockAnswerButtons();
+  revealCorrectAnswer();
+  elements.feedback.textContent = `Waktu habis! Jawabannya ${questions[currentQuestionIndex].answer}.`;
+  elements.feedback.classList.add("feedback--wrong");
+  scheduleNextQuestion();
 }
 
+function scheduleNextQuestion() {
+  nextQuestionTimeout = setTimeout(() => {
+    currentQuestionIndex += 1;
 
-// =========================================
-// BUTTON EVENT
-// =========================================
+    if (currentQuestionIndex < questions.length) {
+      renderQuestion();
+    } else {
+      finishGame();
+    }
+  }, 1100);
+}
 
-startBtn.addEventListener(
-  "click",
-  startGame
-);
+function finishGame() {
+  clearGameTimers();
 
+  const previousBest = getBestScore();
+  if (score > previousBest) saveBestScore(score);
+  updateBestScoreLabels();
 
-restartBtn.addEventListener(
-  "click",
-  startGame
-);
+  elements.finalScore.textContent = String(score);
+  elements.correctCount.textContent = String(correctAnswers);
 
-
-backBtn.addEventListener(
-  "click",
-  () => {
-
-    showScreen(
-      startScreen
-    );
-
+  if (correctAnswers === questions.length) {
+    elements.resultTitle.textContent = "Sempurna!";
+    elements.resultMessage.textContent = "Semua jawabanmu benar. Kamu benar-benar jago berhitung!";
+    elements.resultBadge.textContent = "🏆";
+  } else if (correctAnswers >= 3) {
+    elements.resultTitle.textContent = "Hebat Sekali!";
+    elements.resultMessage.textContent = "Kerja bagus! Sedikit latihan lagi dan kamu akan semakin jago.";
+    elements.resultBadge.textContent = "⭐";
+  } else {
+    elements.resultTitle.textContent = "Tetap Semangat!";
+    elements.resultMessage.textContent = "Setiap latihan membuatmu lebih hebat. Yuk, coba sekali lagi!";
+    elements.resultBadge.textContent = "🌱";
   }
-);
 
+  showScreen("result");
+  elements.restartButton.focus({ preventScroll: true });
+}
 
-homeBtn.addEventListener(
-  "click",
-  () => {
+function goHome() {
+  clearGameTimers();
+  updateBestScoreLabels();
+  showScreen("start");
+  elements.startButton.focus({ preventScroll: true });
+}
 
-    clearInterval(
-      timerInterval
-    );
+elements.startButton.addEventListener("click", startGame);
+elements.restartButton.addEventListener("click", startGame);
+elements.homeButton.addEventListener("click", goHome);
+elements.resultHomeButton.addEventListener("click", goHome);
 
-    showScreen(
-      startScreen
-    );
-
-  }
-);
+updateBestScoreLabels();
