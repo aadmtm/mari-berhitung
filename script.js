@@ -4,6 +4,13 @@ const questions = [
   { question: "3 + 3 = ?", answer: 6, choices: [6, 5, 3, 4] },
   { question: "5 + 2 = ?", answer: 7, choices: [6, 5, 7, 4] },
   { question: "2 + 4 = ?", answer: 6, choices: [6, 5, 1, 4] },
+  { question: "3 + 3 = ?", answer: 6, choices: [6, 5, 3, 4] },
+  { question: "2 + 1 = ?", answer: 3, choices: [5, 2, 3, 4] },
+  { question: "3 + 2 = ?", answer: 5, choices: [6, 5, 3, 4] },
+  { question: "3 + 3 = ?", answer: 6, choices: [6, 5, 3, 4] },
+  { question: "5 + 2 = ?", answer: 7, choices: [6, 5, 7, 4] },
+  { question: "2 + 4 = ?", answer: 6, choices: [6, 5, 1, 4] },
+  { question: "3 + 3 = ?", answer: 6, choices: [6, 5, 3, 4] },
 ];
 
 const QUESTION_TIME = 10;
