@@ -1,666 +1,138 @@
-// =========================================
-// DATA SOAL
-// =========================================
-
-const questions = [
-  {
-    question: "2 + 1 = ?",
-    answer: 3,
-    choices: [5, 2, 3, 4]
-  },
-
-  {
-    question: "3 + 2 = ?",
-    answer: 5,
-    choices: [6, 5, 3, 4]
-  },
-
-  {
-    question: "3 + 3 = ?",
-    answer: 6,
-    choices: [6, 5, 3, 4]
-  },
-
-  {
-    question: "5 + 2 = ?",
-    answer: 7,
-    choices: [6, 5, 7, 4]
-  },
-
-  {
-    question: "2 + 4 = ?",
-    answer: 6,
-    choices: [6, 5, 1, 4]
-  }
-];
-
-
-// =========================================
-// VARIABLE GAME
-// =========================================
-
-let currentQuestion = 0;
-let score = 0;
-
-let timeLeft = 10;
-
-let timerInterval;
-
-let answered = false;
-
-
-// =========================================
-// ELEMENT
-// =========================================
-
-const startScreen =
-  document.getElementById("startScreen");
-
-const gameScreen =
-  document.getElementById("gameScreen");
-
-const resultScreen =
-  document.getElementById("resultScreen");
-
-
-const startBtn =
-  document.getElementById("startBtn");
-
-const restartBtn =
-  document.getElementById("restartBtn");
-
-const backBtn =
-  document.getElementById("backBtn");
-
-const homeBtn =
-  document.getElementById("homeBtn");
-
-
-const questionElement =
-  document.getElementById("question");
-
-const choicesElement =
-  document.getElementById("choices");
-
-const questionNumber =
-  document.getElementById("questionNumber");
-
-const scoreElement =
-  document.getElementById("score");
-
-const currentScoreElement =
-  document.getElementById("currentScore");
-
-const timerElement =
-  document.getElementById("timer");
-
-const progressFill =
-  document.getElementById("progressFill");
-
-const feedback =
-  document.getElementById("feedback");
-
-const finalScore =
-  document.getElementById("finalScore");
-
-const bestScoreElement =
-  document.getElementById("bestScore");
-
-const resultMessage =
-  document.getElementById("resultMessage");
-
-const resultStars =
-  document.getElementById("resultStars");
-
-
-// =========================================
-// BEST SCORE
-// =========================================
-
-let bestScore =
-  Number(
-    localStorage.getItem(
-      "mathBestScore"
-    )
-  ) || 0;
-
-
-bestScoreElement.textContent =
-  bestScore;
-
-
-// =========================================
-// PINDAH SCREEN
-// =========================================
-
-function showScreen(screen) {
-
-  document
-    .querySelectorAll(".screen")
-    .forEach(item => {
-
-      item.classList.remove(
-        "active"
-      );
-
-    });
-
-
-  screen.classList.add(
-    "active"
-  );
-
-}
-
-
-// =========================================
-// MULAI GAME
-// =========================================
-
-function startGame() {
-
-  currentQuestion = 0;
-
-  score = 0;
-
-  timeLeft = 10;
-
-  answered = false;
-
-
-  scoreElement.textContent =
-    score;
-
-  currentScoreElement.textContent =
-    score;
-
-
-  showScreen(gameScreen);
-
-  loadQuestion();
-
-}
-
-
-// =========================================
-// LOAD QUESTION
-// =========================================
-
-function loadQuestion() {
-
-  answered = false;
-
-  clearInterval(timerInterval);
-
-
-  feedback.textContent = "";
-
-  feedback.className =
-    "feedback";
-
-
-  const question =
-    questions[currentQuestion];
-
-
-  questionElement.textContent =
-    question.question;
-
-
-  questionNumber.textContent =
-    currentQuestion + 1;
-
-
-  progressFill.style.width =
-    `${
-      ((currentQuestion + 1)
-      / questions.length)
-      * 100
-    }%`;
-
-
-  choicesElement.innerHTML = "";
-
-
-  question.choices.forEach(choice => {
-
-    const button =
-      document.createElement(
-        "button"
-      );
-
-    button.className =
-      "choice-btn";
-
-    button.textContent =
-      choice;
-
-
-    button.addEventListener(
-      "click",
-      () => selectAnswer(
-        choice,
-        button
-      )
-    );
-
-
-    choicesElement.appendChild(
-      button
-    );
-
-  });
-
-
-  startTimer();
-
-}
-
-
-// =========================================
-// TIMER
-// =========================================
-
-function startTimer() {
-
-  timeLeft = 10;
-
-  timerElement.textContent =
-    timeLeft;
-
-
-  const timerCircle =
-    document.querySelector(
-      ".timer-circle"
-    );
-
-
-  timerCircle.classList.remove(
-    "warning"
-  );
-
-
-  timerInterval =
-    setInterval(() => {
-
-      timeLeft--;
-
-      timerElement.textContent =
-        timeLeft;
-
-
-      // warning ketika tersisa 3 detik
-
-      if (timeLeft <= 3) {
-
-        timerCircle.classList.add(
-          "warning"
-        );
-
-      }
-
-
-      // waktu habis
-
-      if (timeLeft <= 0) {
-
-        clearInterval(
-          timerInterval
-        );
-
-        timeOut();
-
-      }
-
-    }, 1000);
-
-}
-
-
-// =========================================
-// PILIH JAWABAN
-// =========================================
-
-function selectAnswer(
-  selectedAnswer,
-  selectedButton
-) {
-
-  if (answered) return;
-
-
-  answered = true;
-
-  clearInterval(
-    timerInterval
-  );
-
-
-  const correctAnswer =
-    questions[currentQuestion]
-      .answer;
-
-
-  const buttons =
-    document.querySelectorAll(
-      ".choice-btn"
-    );
-
-
-  buttons.forEach(button => {
-
-    button.disabled = true;
-
-  });
-
-
-  // BENAR
-
-  if (
-    selectedAnswer ===
-    correctAnswer
-  ) {
-
-    score += 5;
-
-
-    selectedButton.classList.add(
-      "correct"
-    );
-
-
-    feedback.textContent =
-      "🎉 Benar! +5 poin";
-
-    feedback.classList.add(
-      "correct"
-    );
-
-  }
-
-  // SALAH
-
-  else {
-
-    selectedButton.classList.add(
-      "wrong"
-    );
-
-
-    feedback.textContent =
-      `😅 Belum tepat! Jawabannya ${correctAnswer}`;
-
-    feedback.classList.add(
-      "wrong"
-    );
-
-
-    // tampilkan jawaban benar
-
-    buttons.forEach(button => {
-
-      if (
-        Number(button.textContent)
-        === correctAnswer
-      ) {
-
-        button.classList.add(
-          "correct"
-        );
-
-      }
-
-    });
-
-  }
-
-
-  updateScore();
-
-
-  // lanjut soal berikutnya
-
-  setTimeout(() => {
-
-    nextQuestion();
-
-  }, 1300);
-
-}
-
-
-// =========================================
-// WAKTU HABIS
-// =========================================
-
-function timeOut() {
-
-  if (answered) return;
-
-  answered = true;
-
-
-  const correctAnswer =
-    questions[currentQuestion]
-      .answer;
-
-
-  const buttons =
-    document.querySelectorAll(
-      ".choice-btn"
-    );
-
-
-  buttons.forEach(button => {
-
-    button.disabled = true;
-
-
-    if (
-      Number(button.textContent)
-      === correctAnswer
-    ) {
-
-      button.classList.add(
-        "correct"
-      );
-
-    }
-
-  });
-
-
-  feedback.textContent =
-    `⏰ Waktu habis! Jawabannya ${correctAnswer}`;
-
-  feedback.classList.add(
-    "wrong"
-  );
-
-
-  setTimeout(() => {
-
-    nextQuestion();
-
-  }, 1500);
-
-}
-
-
-// =========================================
-// UPDATE SCORE
-// =========================================
-
-function updateScore() {
-
-  scoreElement.textContent =
-    score;
-
-  currentScoreElement.textContent =
-    score;
-
-}
-
-
-// =========================================
-// NEXT QUESTION
-// =========================================
-
-function nextQuestion() {
-
-  currentQuestion++;
-
-
-  if (
-    currentQuestion <
-    questions.length
-  ) {
-
-    loadQuestion();
-
-  }
-
-  else {
-
-    endGame();
-
-  }
-
-}
-
-
-// =========================================
-// SELESAI GAME
-// =========================================
-
-function endGame() {
-
-  clearInterval(
-    timerInterval
-  );
-
-
-  finalScore.textContent =
-    score;
-
-
-  // simpan skor terbaik
-
-  if (score > bestScore) {
-
-    bestScore = score;
-
-    localStorage.setItem(
-      "mathBestScore",
-      bestScore
-    );
-
-  }
-
-
-  bestScoreElement.textContent =
-    bestScore;
-
-
-  // Pesan hasil
-
-  if (score === 25) {
-
-    resultMessage.textContent =
-      "Luar biasa! Semua jawaban benar! 🎉";
-
-    resultStars.textContent =
-      "⭐⭐⭐⭐⭐";
-
-  }
-
-  else if (score >= 20) {
-
-    resultMessage.textContent =
-      "Hebat sekali! Sedikit lagi sempurna!";
-
-    resultStars.textContent =
-      "⭐⭐⭐⭐";
-
-  }
-
-  else if (score >= 15) {
-
-    resultMessage.textContent =
-      "Bagus! Terus berlatih ya!";
-
-    resultStars.textContent =
-      "⭐⭐⭐";
-
-  }
-
-  else if (score >= 10) {
-
-    resultMessage.textContent =
-      "Semangat! Kamu pasti bisa!";
-
-    resultStars.textContent =
-      "⭐⭐";
-
-  }
-
-  else {
-
-    resultMessage.textContent =
-      "Ayo coba lagi dan raih skor terbaik!";
-
-    resultStars.textContent =
-      "⭐";
-
-  }
-
-
-  showScreen(
-    resultScreen
-  );
-
-}
-
-
-// =========================================
-// BUTTON EVENT
-// =========================================
-
-startBtn.addEventListener(
-  "click",
-  startGame
-);
-
-
-restartBtn.addEventListener(
-  "click",
-  startGame
-);
-
-
-backBtn.addEventListener(
-  "click",
-  () => {
-
-    showScreen(
-      startScreen
-    );
-
-  }
-);
-
-
-homeBtn.addEventListener(
-  "click",
-  () => {
-
-    clearInterval(
-      timerInterval
-    );
-
-    showScreen(
-      startScreen
-    );
-
-  }
-);
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Game kuis matematika penjumlahan yang seru untuk anak sekolah dasar."
+    />
+    <meta name="theme-color" content="#7ed9ef" />
+    <title>Petualangan Matematika</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section id="start-screen" class="screen screen--active" aria-labelledby="game-title">
+        <div class="hero" aria-hidden="true">
+          <span class="cloud cloud--one"></span>
+          <span class="cloud cloud--two"></span>
+          <span class="math-shape math-shape--two">2</span>
+          <span class="math-shape math-shape--plus">+</span>
+          <span class="math-shape math-shape--five">5</span>
+          <span class="spark spark--one">✦</span>
+          <span class="spark spark--two">✦</span>
+
+          <div class="hill hill--back"></div>
+          <div class="hill hill--front"></div>
+
+          <div class="mascot">
+            <div class="mascot__horn mascot__horn--left"></div>
+            <div class="mascot__horn mascot__horn--right"></div>
+            <div class="mascot__face">
+              <span class="mascot__eye mascot__eye--left"></span>
+              <span class="mascot__eye mascot__eye--right"></span>
+              <span class="mascot__cheek mascot__cheek--left"></span>
+              <span class="mascot__cheek mascot__cheek--right"></span>
+              <span class="mascot__mouth"></span>
+            </div>
+            <div class="mascot__body">
+              <span class="mascot__belly">3 + 2</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="start-card">
+          <span class="twinkle" aria-hidden="true">✦</span>
+          <p class="eyebrow">Ayo berhitung!</p>
+          <h1 id="game-title">Petualangan<br /><span>Matematika!</span></h1>
+          <p class="subtitle">Belajar seru untuk Kelas 2 SD</p>
+
+          <div class="game-facts" aria-label="Informasi permainan">
+            <div class="fact">
+              <span class="fact__icon fact__icon--mint" aria-hidden="true">✓</span>
+              <strong>5 soal</strong>
+            </div>
+            <div class="fact">
+              <span class="fact__icon fact__icon--yellow" aria-hidden="true">▥</span>
+              <strong>1 level</strong>
+            </div>
+            <div class="fact">
+              <span class="fact__icon fact__icon--pink" aria-hidden="true">⏱</span>
+              <strong>10 detik</strong>
+            </div>
+          </div>
+
+          <button id="start-button" class="primary-button" type="button">
+            <span class="play-icon" aria-hidden="true"></span>
+            Mulai Bermain
+          </button>
+
+          <p class="best-score"><span aria-hidden="true">🏆</span> Skor terbaik: <strong id="best-score-start">0</strong></p>
+          <p class="score-note">Setiap jawaban benar bernilai <strong>+5 poin.</strong></p>
+        </div>
+      </section>
+
+      <section id="quiz-screen" class="screen quiz-screen" aria-labelledby="question-text" hidden>
+        <header class="quiz-header">
+          <button id="home-button" class="icon-button" type="button" aria-label="Kembali ke halaman awal">⌂</button>
+          <div class="progress-copy">
+            <span id="question-number">Soal 1 dari 5</span>
+            <div class="progress-track" role="progressbar" aria-label="Kemajuan soal" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1">
+              <span id="progress-bar"></span>
+            </div>
+          </div>
+          <div class="score-pill" aria-label="Skor saat ini"><span aria-hidden="true">⭐</span><strong id="current-score">0</strong></div>
+        </header>
+
+        <div class="quiz-content">
+          <div class="timer" id="timer" aria-label="Sisa waktu 10 detik">
+            <svg class="timer__ring" viewBox="0 0 80 80" aria-hidden="true">
+              <circle class="timer__track" cx="40" cy="40" r="34"></circle>
+              <circle id="timer-progress" class="timer__progress" cx="40" cy="40" r="34"></circle>
+            </svg>
+            <div class="timer__copy"><strong id="timer-value">10</strong><span>detik</span></div>
+          </div>
+
+          <p class="question-label">Berapa hasilnya?</p>
+          <h2 id="question-text">2 + 1 = ?</h2>
+
+          <div id="answers" class="answers" aria-label="Pilihan jawaban"></div>
+          <p id="feedback" class="feedback" aria-live="polite"></p>
+        </div>
+
+        <div class="ground-art" aria-hidden="true">
+          <span>1</span><span>+</span><span>4</span><span>=</span><span>5</span>
+        </div>
+      </section>
+
+      <section id="result-screen" class="screen result-screen" aria-labelledby="result-title" hidden>
+        <div class="confetti" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div class="result-card">
+          <div id="result-badge" class="result-badge" aria-hidden="true">🏆</div>
+          <p class="eyebrow">Petualangan selesai!</p>
+          <h2 id="result-title">Hebat Sekali!</h2>
+          <p id="result-message" class="result-message">Kamu berhasil menyelesaikan semua soal.</p>
+
+          <div class="final-score">
+            <span>Skor kamu</span>
+            <strong id="final-score">0</strong>
+            <small>dari 25 poin</small>
+          </div>
+
+          <div class="result-stats">
+            <div><span aria-hidden="true">✓</span><strong id="correct-count">0</strong><small>Benar</small></div>
+            <div><span aria-hidden="true">🏆</span><strong id="best-score-result">0</strong><small>Terbaik</small></div>
+          </div>
+
+          <button id="restart-button" class="primary-button" type="button"><span aria-hidden="true">↻</span> Main Lagi</button>
+          <button id="result-home-button" class="text-button" type="button">Kembali ke halaman awal</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
